@@ -241,6 +241,35 @@ ul { list-style: none; }
 }
 .video-wrapper video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .video-wrapper iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+
+/* ── CUSTOM VIDEO CONTROLS ── */
+.yt-player-wrap { position: relative; }
+.yt-player-wrap #yt-player { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.yt-controls {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.85rem;
+  background: linear-gradient(transparent, rgba(0,0,0,0.75));
+  opacity: 0; transition: opacity 0.25s;
+  z-index: 10;
+}
+.yt-player-wrap:hover .yt-controls { opacity: 1; }
+.yt-btn {
+  background: none; border: none; cursor: pointer; padding: 0;
+  color: #fff; display: flex; align-items: center; flex-shrink: 0;
+}
+.yt-btn svg { width: 22px; height: 22px; fill: #fff; }
+.yt-volume {
+  -webkit-appearance: none; appearance: none;
+  width: 80px; height: 3px; border-radius: 2px; outline: none; cursor: pointer;
+  background: linear-gradient(to right, #fff 100%, rgba(255,255,255,0.3) 100%);
+}
+.yt-volume::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 12px; height: 12px; border-radius: 50%; background: #fff; cursor: pointer;
+}
+.yt-volume::-moz-range-thumb {
+  width: 12px; height: 12px; border-radius: 50%; background: #fff; cursor: pointer; border: none;
+}
 .video-caption { font-size: 0.82rem; font-weight: 300; color: var(--muted); line-height: 1.6; font-style: italic; }
 .video-placeholder {
   position: absolute; inset: 0;
@@ -518,13 +547,19 @@ footer { background: var(--dark2); border-top: 1px solid var(--mid); padding: 4r
 
       <div class="about-video-col reveal">
         <p class="video-label">Watch Our Products in Action</p>
-        <div class="video-wrapper" id="videoWrapper">
-          <iframe
-            src="https://www.youtube.com/embed/sxhgcZscZVc"
-            title="SAS24 Products in Action"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowfullscreen
-          ></iframe>
+        <div class="video-wrapper">
+          <div class="yt-player-wrap" id="videoWrapper" style="position:absolute;inset:0;">
+            <div id="yt-player"></div>
+            <div class="yt-controls" id="ytControls">
+              <button class="yt-btn" id="ytPlayBtn" aria-label="Play/Pause">
+                <!-- Play icon (shown when paused) -->
+                <svg id="iconPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <!-- Pause icon (hidden when paused) -->
+                <svg id="iconPause" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              </button>
+              <input class="yt-volume" id="ytVolume" type="range" min="0" max="100" value="100" aria-label="Volume">
+            </div>
+          </div>
         </div>
         <p class="video-caption">See how SAS24 heating blankets are applied and perform in real industrial conditions.</p>
         <div style="margin-top:1.5rem;">
@@ -856,5 +891,60 @@ const revealObserver = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
 </script>
+
+<!-- YouTube IFrame Player API -->
+<script>
+  var ytPlayer;
+  var ytReady = false;
+
+  window.onYouTubeIframeAPIReady = function () {
+    ytPlayer = new YT.Player('yt-player', {
+      videoId: 'sxhgcZscZVc',
+      playerVars: {
+        controls: 0,
+        modestbranding: 1,
+        rel: 0,
+        iv_load_policy: 3,
+        disablekb: 1,
+        fs: 0,
+        playsinline: 1
+      },
+      events: {
+        onReady: function () {
+          ytReady = true;
+          updateVolumeTrack(document.getElementById('ytVolume').value);
+        },
+        onStateChange: function (e) {
+          var playing = e.data === YT.PlayerState.PLAYING;
+          document.getElementById('iconPlay').style.display  = playing ? 'none'  : '';
+          document.getElementById('iconPause').style.display = playing ? ''      : 'none';
+        }
+      }
+    });
+  };
+
+  document.getElementById('ytPlayBtn').addEventListener('click', function () {
+    if (!ytReady) return;
+    var state = ytPlayer.getPlayerState();
+    if (state === YT.PlayerState.PLAYING) {
+      ytPlayer.pauseVideo();
+    } else {
+      ytPlayer.playVideo();
+    }
+  });
+
+  function updateVolumeTrack(val) {
+    var pct = val + '%';
+    var el = document.getElementById('ytVolume');
+    el.style.background = 'linear-gradient(to right, #fff ' + pct + ', rgba(255,255,255,0.3) ' + pct + ')';
+  }
+
+  document.getElementById('ytVolume').addEventListener('input', function () {
+    if (!ytReady) return;
+    ytPlayer.setVolume(parseInt(this.value));
+    updateVolumeTrack(this.value);
+  });
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
 </body>
 </html>
