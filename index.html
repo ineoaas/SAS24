@@ -882,12 +882,39 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLight
 
 function submitForm() {
   const fname = document.getElementById('fname').value.trim();
+  const lname = document.getElementById('lname').value.trim();
   const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const product = document.getElementById('product').value.trim();
+  const message = document.getElementById('message').value.trim();
   if (!fname || !email) { alert('Please fill in your name and email address.'); return; }
-  document.querySelector('.form-submit-btn').style.display = 'none';
-  const success = document.getElementById('formSuccess');
-  success.style.display = 'block';
-  success.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  const btn = document.querySelector('.form-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  fetch('https://formspree.io/f/xojpowdj', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ name: fname + ' ' + lname, email, phone, product, message })
+  })
+  .then(res => {
+    if (res.ok) {
+      btn.style.display = 'none';
+      const success = document.getElementById('formSuccess');
+      success.style.display = 'block';
+      success.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Submit';
+      alert('Something went wrong. Please try again or email us directly at sastwentyfour@gmail.com');
+    }
+  })
+  .catch(() => {
+    btn.disabled = false;
+    btn.textContent = 'Submit';
+    alert('Something went wrong. Please try again or email us directly at sastwentyfour@gmail.com');
+  });
 }
 
 const revealObserver = new IntersectionObserver((entries) => {
